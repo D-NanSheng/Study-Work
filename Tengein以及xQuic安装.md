@@ -21,6 +21,12 @@ tengine中.config配置时，最好用绝对路径
 ./configure   --prefix=/usr/local/tengine   --sbin-path=sbin/tengine   --with-xquic-inc="../xquic-1.6.0/include"   --with-xquic-lib="../xquic-1.6.0/build"   --with-http_v2_module   --without-http_rewrite_module   --add-module=modules/ngx_http_xquic_module   --with-openssl="../Tongsuo-8.3.2" --add-module=modules/nginx-rtmp-module --with-pcre --with-http_mp4_module --with-http_flv_module
 '''
 
+'''
+
+./configure   --prefix=/usr/local/tengine   --sbin-path=sbin/tengine   --with-xquic-inc="../xquic-1.6.0/include"   --with-xquic-lib="../xquic-1.6.0/build"   --with-http_v2_module  --add-module=modules/ngx_http_xquic_module   --with-openssl="../Tongsuo-8.3.2" --add-module=modules/nginx-rtmp-module --with-pcre --with-http_mp4_module --with-http_flv_module
+
+'''
+
 **视频传输**
 参考https://nginx.org/en/docs/http/ngx_http_mp4_module.html
 在生成tengine的配置时，需要增加'--with-http_mp4_module'
