@@ -85,6 +85,13 @@ http {
 }
 '''
 
+
+增加nginx-rtmp-module模块
+nginx-rtmp-module 网址：https://github.com/arut/nginx-rtmp-module
+在编译tengine时，    './configure --add-module=/path/nginx-rtmp-module' 我的建议是把nginx-rtmp-module放在tengine/modelues中，因为我写成绝对路径编译也会显示找不到
+
+
+
 **剩余未解决问题**
 我的视频文件位置是/usr/local/tengine/video/，输入的播放地址是https://ipipip:8000/video/bbb_360p_30fps.mp4
 如果不增加'alias /usr/local/tengine/video/;'就无法正确播放视频，因为他会默认从/usr/local/tengine/html/video/里面找
