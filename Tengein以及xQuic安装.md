@@ -15,17 +15,10 @@ Tengein以及xQuic安装过程及遇到的问题
 注意，'conf/nginx.conf'这个文件的位置是在'/usr/local/tengine/'，而不是你下载了tengine的那个目录。所以修改配置时要修改'/usr/local/tengine/conf/nginx.conf'这个文件。
 
 tengine中.config配置时，最好用绝对路径
+
 '''
 ./configure \
-  --prefix=/usr/local/tengine \
-  --sbin-path=sbin/tengine \
-  --with-xquic-inc="/home/guopeisheng/workbench/QuicBBR/xquic-1.6.0/include" \
-  --with-xquic-lib="/home/guopeisheng/workbench/QuicBBR/xquic-1.6.0/build" \
-  --with-http_v2_module \
-  --without-http_rewrite_module \
-  --add-module=modules/ngx_http_xquic_module \
-  --with-openssl="/home/guopeisheng/workbench/QuicBBR/Tongsuo-8.3.2" \
-  --with-http_mp4_module(ps:传输mp4视频才需要这个)
+./configure   --prefix=/usr/local/tengine   --sbin-path=sbin/tengine   --with-xquic-inc="../xquic-1.6.0/include"   --with-xquic-lib="../xquic-1.6.0/build"   --with-http_v2_module   --without-http_rewrite_module   --add-module=modules/ngx_http_xquic_module   --with-openssl="../Tongsuo-8.3.2" --add-module=modules/nginx-rtmp-module --with-pcre --with-http_mp4_module --with-http_flv_module
 '''
 
 **视频传输**
