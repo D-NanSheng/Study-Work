@@ -1,39 +1,80 @@
 Tengein以及xQuic安装过程及遇到的问题
 
 **安装教程：**
-[https://github.com/TheDarkArchmageShangYang/networkLearning/blob/main/工具的安装及使用/xquic服务器使用.md](https://github.com/alibaba/tengine/blob/master/modules/ngx_http_xquic_module/README.md)
-注意，xquic版本最好按照上面的教程，如果选择最新的xquic会出现接口不一致的问题。
+
+参考链接
+
+[https://github.com/TheDarkArchmageShangYang/networkLearning/blob/main/工具的安装及使用/xquic服务器使用.md]
+
+(https://github.com/alibaba/tengine/blob/master/modules/ngx_http_xquic_module/README.md)
+
+注意，安装的时候，xquic版本最好按照下面的教程，否可可能出现接口不一致的问题。
+
 注意，xquic官方提供了两种ssl库，最好选择Tongsuo，选择boringssl也可能会出现接口不一致的问题，此外boringssl本身并不提倡别的应用使用它作为第三方库。
 
-另外，注意上述文档中的这句话
-'/usr/local/tengine/sbin/tengine -p /usr/local/tengine/ -c conf/nginx.conf'
-'''
-/usr/local/tengine/sbin/tengine：这是 Tengine 服务器的可执行文件路径。表明要执行位于 /usr/local/tengine/sbin/ 目录下的 tengine 程序。
--p /usr/local/tengine/：这个参数指定了 Tengine 的运行目录（prefix）为 /usr/local/tengine/。运行目录通常用于存放一些与服务器运行相关的文件，如日志文件、临时文件等。
--c conf/nginx.conf：参数 -c 用于指定 Tengine 的配置文件。这里指定的配置文件为 /usr/local/tengine/conf/nginx.conf。配置文件中包含了服务器的各种设置，如监听的端口、虚拟主机的配置、反向代理规则等，决定了服务器如何处理客户端的请求
-'''
-注意，'conf/nginx.conf'这个文件的位置是在'/usr/local/tengine/'，而不是你下载了tengine的那个目录。所以修改配置时要修改'/usr/local/tengine/conf/nginx.conf'这个文件。
+```
+# 下载 Tongsuo，示例中下载 8.3.2 版本
+wget -c "https://github.com/Tongsuo-Project/Tongsuo/archive/refs/tags/8.3.2.tar.gz"
+tar -x 8.3.2.tar.gz
 
-tengine中.config配置时，最好用绝对路径
+# 下载 xquic，示例中下载 1.6.0 版本
+wget -c "https://github.com/alibaba/xquic/archive/refs/tags/v1.6.0.tar.gz"
+tar -xf v1.6.0.tar.gz
 
-'''
+# 下载 Tengine 3.0.0 以上版本，示例从 master 获取最新版本，也可下载指定版本
+git clone git@github.com:alibaba/tengine.git
+
+# 编译 Tongsuo
+cd Tongsuo-8.3.2
+./config --prefix=/usr/local/babassl  (ps 路径可自定义，但必须使用绝对路径)
+make
+make install
+export SSL_TYPE_STR="babassl"
+export SSL_PATH_STR="${PWD}"
+export SSL_INC_PATH_STR="${PWD}/include"
+export SSL_LIB_PATH_STR="${PWD}/libssl.a;${PWD}/libcrypto.a"
+cd ../../
+
+# 编译 xquic 库
+cd xquic-1.6.0/
+mkdir -p build; cd build
+cmake -DXQC_SUPPORT_SENDMMSG_BUILD=1 -DXQC_ENABLE_TESTING=1 -DXQC_ENABLE_BBR2=1 -DXQC_DISABLE_RENO=0 -DSSL_TYPE=${SSL_TYPE_STR} -DSSL_PATH=${SSL_PATH_STR} -DSSL_INC_PATH=${SSL_INC_PATH_STR} -DSSL_LIB_PATH=${SSL_LIB_PATH_STR} ..
+make
+cp "libxquic.so" /usr/local/lib/     (这个一定要执行，或者把这个库所在地址设置一个环境变量)
+cd ..
+
+# 编译 Tengine
+cd tengine
+
+# 注：xquic 依赖 ngx_http_v2_module，需要参数 --with-http_v2_module
+# 注：注意下面的 **..** 是安装对应文件的路径
 ./configure \
-./configure   --prefix=/usr/local/tengine   --sbin-path=sbin/tengine   --with-xquic-inc="../xquic-1.6.0/include"   --with-xquic-lib="../xquic-1.6.0/build"   --with-http_v2_module   --without-http_rewrite_module   --add-module=modules/ngx_http_xquic_module   --with-openssl="../Tongsuo-8.3.2" --add-module=modules/nginx-rtmp-module --with-pcre --with-http_mp4_module --with-http_flv_module
-'''
+  --prefix=/usr/local/tengine \ (ps 路径可自定义 <**somewhere-tengine**>)
+  --sbin-path=sbin/tengine \
+  --with-xquic-inc="../xquic-1.6.0/include" \
+  --with-xquic-lib="../xquic-1.6.0/build" \
+  --with-http_v2_module \
+  --without-http_rewrite_module \
+  --add-module=modules/ngx_http_xquic_module \
+  --with-openssl="../Tongsuo-8.3.2" \
+  --with-http_mp4_module \ (ps 点播mp4需要)
+  --add-module=modules/nginx-rtmp-module \ (ps rtmp推流，http-flv拉流需要，下载地址 https://github.com/winshining/nginx-http-flv-module/tree/master)
 
-'''
+make
+make install
 
-./configure   --prefix=/usr/local/tengine   --sbin-path=sbin/tengine   --with-xquic-inc="../xquic-1.6.0/include"   --with-xquic-lib="../xquic-1.6.0/build"   --with-http_v2_module  --add-module=modules/ngx_http_xquic_module   --with-openssl="../Tongsuo-8.3.2" --add-module=modules/nginx-rtmp-module --with-pcre --with-http_mp4_module --with-http_flv_module
+```
 
-'''
 
-**视频传输**
-参考https://nginx.org/en/docs/http/ngx_http_mp4_module.html
-在生成tengine的配置时，需要增加'--with-http_mp4_module'
-注意，视频文件要也要放在/usr/local/tengine/目录下，或者就指定一个绝对路径。
+依据nginx.conf配置启动tengine，注意，这里的<**/usr/local/tengine**> 是上面安装过程中的<**somewhere-tengine**>
 
+`/usr/local/tengine/sbin/tengine -c /usr/local/tengine/conf/nginx.conf`
+
+
+
+一个可用于xquic传输的配置
 **nginx.conf**
-'''
+```
 worker_processes  1;
 user root;
 error_log  logs/error.log debug;
@@ -45,15 +86,79 @@ xquic_log   "pipe:rollback /home/guopeisheng/workbench/QuicBBR/tengine-xquic.log
 http {
     include       mime.types;
     default_type  application/octet-stream;
-    xquic_ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/cacert.pem;
-    xquic_ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/privkey.pem;
+    xquic_ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/cacert.crt;
+    xquic_ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/privkey.key;
     xquic_congestion_control bbr;
     xquic_socket_rcvbuf 5242880;
     xquic_socket_sndbuf 5242880;
     xquic_anti_amplification_limit 5;
     xquic_log_level debug;
     server {
-        listen 10.37.30.62:80;
+        # listen 10.37.30.62:80;
+        listen 8000 ssl http2;
+        listen 8000 xquic reuseport;
+        server_name guopeisheng;
+        
+        add_header Alt-Svc 'h3=":8000"; ma=2592000,h3-29=":8000"; ma=2592000;' always;
+        
+        ssl_protocols       TLSv1.3;
+        ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/cacert.crt;
+        ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/privkey.key;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+
+            autoindex on;
+            autoindex_exact_size   on;
+        }
+    }
+}
+```
+
+
+**ssl_certificate 文件生成**
+
+参考 https://letsencrypt.org/zh-cn/docs/certificates-for-localhost/
+
+
+**验证Quic通信的第一种方式**
+
+利用xquic文件夹build中的测试客户端测试
+
+`./test_client -a 127.0.0.1 -p 8000 -u https://guopeisheng.com/`
+
+
+**验证Quic通信的第二种方式**
+
+支持quic的curl：https://github.com/TheDarkArchmageShangYang/networkLearning/blob/main/工具的安装及使用/支持quic的curl的安装和使用.md
+
+注意，**http3访问时必须带域名**，不能仅通过ip+端口访问。
+
+由于我们时测试证书，DNS无法解析域名，所以，最好在本地域名转换文件中添加把域名转为ip的条目。
+
+**mp4点播的配置**
+```
+worker_processes  1;
+user root;
+error_log  logs/error.log debug;
+events {
+    worker_connections  1024;
+}
+xquic_log   "pipe:rollback /home/guopeisheng/workbench/QuicBBR/tengine-xquic.log baknum=10 maxsize=1G interval=1d adjust=600" debug;
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    xquic_ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/cacert.crt;
+    xquic_ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/privkey.key;
+    xquic_congestion_control bbr;
+    xquic_socket_rcvbuf 5242880;
+    xquic_socket_sndbuf 5242880;
+    xquic_anti_amplification_limit 5;
+    xquic_log_level debug;
+    server {
+        # listen 10.37.30.62:80;
         listen 10.37.30.62:8000 ssl http2;
         listen 10.37.30.62:8000 xquic reuseport;
         server_name guopeisheng;
@@ -61,15 +166,15 @@ http {
         add_header Alt-Svc 'h3=":8000"; ma=2592000,h3-29=":8000"; ma=2592000;' always;
         
         ssl_protocols       TLSv1.3;
-        ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/cacert.pem;
-        ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/privkey.pem;
+        ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/cacert.crt;
+        ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/privkey.key;
 
         location / {
             root   html;
             index  index.html index.htm;
 
-            # autoindex on;
-            # autoindex_exact_size   on;
+            autoindex on;
+            autoindex_exact_size   on;
         }
         location /video/ {
             alias /usr/local/tengine/video/;  # 指定了绝对路径
@@ -81,17 +186,212 @@ http {
             # mp4_limit_rate_after  30s; # 商业版才有
         }
     }
+```
+
+**rtmp推流+rtmp/hls/dash/http-flv拉流**
+
+参考 https://github.com/winshining/nginx-http-flv-module/tree/master)
+
+```
+worker_processes  1;
+user root;
+error_log  logs/error.log debug;
+events {
+    worker_connections  1024;
 }
-'''
+xquic_log   "pipe:rollback /home/guopeisheng/workbench/QuicBBR/tengine-xquic.log baknum=10 maxsize=1G interval=1d adjust=600" debug;
+# xuqic http 配置
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    #keepalive_timeout  65;
 
+    xquic_ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/server.crt;
+    xquic_ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/server.key;
+    xquic_congestion_control bbr;
+    xquic_socket_rcvbuf 5242880;
+    xquic_socket_sndbuf 5242880;
+    xquic_anti_amplification_limit 5;
+    xquic_log_level debug;
+    server {
+        listen 8000 ssl http2; # 在浏览器访问时，通过http2转quic
+        listen 8000 xquic reuseport;
+        server_name test.guopeisheng.com; # 域名
+        
+        add_header Alt-Svc 'h3=":8000"; ma=2592000,h3-29=":8000"; ma=2592000;' always;
+        
+        ssl_protocols       TLSv1.3;# quic只能用1.3
+        ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/cacert.pem;
+        ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/privkey.pem;
+        # 根文件
+        location / {
+            root   html;
+            index  index.html index.htm;
 
-增加nginx-rtmp-module模块
-nginx-rtmp-module 网址：https://github.com/arut/nginx-rtmp-module
-在编译tengine时，    './configure --add-module=/path/nginx-rtmp-module' 我的建议是把nginx-rtmp-module放在tengine/modelues中，因为我写成绝对路径编译也会显示找不到
+            autoindex on;
+            autoindex_exact_size   on;
+        }
+
+        # http-flv直播 https://test.guopeisheng.com:8000/live?port=1935&app=myapp&stream=stream-123456
+        location /live {
+            proxy_pass http://本机ip或域名:80/live;  # 将请求代理到目标服务器的指定路径，注意要与目标服务器提供服务的路径一致，这里去掉了后面的查询参数，因为查询参数会在代理过程中自动传递
+            # proxy_set_timeout 300;  # 设置代理请求的超时时间，可根据实际情况调整
+            # flv_live on; #打开 HTTP 播放 FLV 直播流功能
+            # chunked_transfer_encoding on; #支持 'Transfer-Encoding: chunked' 方式回复
+
+            # add_header 'Access-Control-Allow-Origin' '*'; #添加额外的 HTTP 头
+            # add_header 'Access-Control-Allow-Credentials' 'true'; #添加额外的 HTTP 头
+            # #add_header Access-Control-Allow-Headers X-Requested-With;
+            # add_header Access-Control-Allow-Methods 'GET,POST,OPTIONS';
+            # add_header 'Cache-Control' 'no-cache';
+        }
+        # location /hls {
+        #     types {
+        #         application/vnd.apple.mpegurl m3u8;
+        #         video/mp2t ts;
+        #     }
+
+        #     root /tmp;
+        #     add_header 'Cache-Control' 'no-cache';
+        # }
+
+        # location /dash {
+        #     root /tmp;
+        #     add_header 'Cache-Control' 'no-cache';
+        # }
+
+        # location /stat {
+        #     #推流播放和录制统计数据的配置
+
+        #     rtmp_stat all;
+        #     rtmp_stat_stylesheet stat.xsl;
+        # }
+
+        # location /stat.xsl {
+        #     root /var/www/rtmp; #指定 stat.xsl 的位置
+        # }
+
+        # #如果需要 JSON 风格的 stat, 不用指定 stat.xsl
+        # #但是需要指定一个新的配置项 rtmp_stat_format
+
+        # #location /stat {
+        # #    rtmp_stat all;
+        # #    rtmp_stat_format json;
+        # #}
+
+        # location /control {
+        #     rtmp_control all; #rtmp 控制模块的配置
+        # }
+
+    }
+
+    server {
+        listen       10.37.30.62:80 default;
+        #listen 10.37.30.62:8080 ssl;
+
+        # ssl_protocols       TLSv1.3;
+        # ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/cacert.pem;
+        # ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/privkey.pem;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+        location /live {
+            flv_live on; #打开 HTTP 播放 FLV 直播流功能
+            chunked_transfer_encoding on; #支持 'Transfer-Encoding: chunked' 方式回复
+
+            add_header 'Access-Control-Allow-Origin' '*'; #添加额外的 HTTP 头
+            add_header 'Access-Control-Allow-Credentials' 'true'; #添加额外的 HTTP 头
+        }
+
+        location /hls {
+            types {
+                application/vnd.apple.mpegurl m3u8;
+                video/mp2t ts;
+            }
+
+            root /tmp;
+            add_header 'Cache-Control' 'no-cache';
+        }
+
+        location /dash {
+            root /tmp;
+            add_header 'Cache-Control' 'no-cache';
+        }
+
+        location /stat {
+            #推流播放和录制统计数据的配置
+
+            rtmp_stat all;
+            rtmp_stat_stylesheet stat.xsl;
+        }
+
+        location /stat.xsl {
+            root /var/www/rtmp; #指定 stat.xsl 的位置
+        }
+
+        #如果需要 JSON 风格的 stat, 不用指定 stat.xsl
+        #但是需要指定一个新的配置项 rtmp_stat_format
+
+        #location /stat {
+        #    rtmp_stat all;
+        #    rtmp_stat_format json;
+        #}
+
+        location /control {
+            rtmp_control all; #rtmp 控制模块的配置
+        }
+    }
+
+}
+
+rtmp_auto_push on;
+rtmp_auto_push_reconnect 1s;
+rtmp_socket_dir /tmp;
+# rtmp推流 
+# ffmpeg -re -i MEDIA_FILE_NAME -c copy -f flv rtmp://example.com[:port]/appname/streamname   [:port]是指rtmp推流的端口，默认1935
+rtmp {
+    out_queue           4096;
+    out_cork            8;
+    max_streams         128;
+    timeout             15s;
+    drop_idle_publisher 15s;
+
+    log_interval 5s; #log 模块在 access.log 中记录日志的间隔时间，对调试非常有用
+    log_size     1m; #log 模块用来记录日志的缓冲区大小
+   
+    server {
+        listen 1935;  # RTMP服务监听端口
+        chunk_size 4000;
+         # RTMP播放--rtmp://example.com[:port]/appname/streamname
+        application myapp {
+            live on;
+            gop_cache on; #打开 GOP 缓存，减少首屏等待时间
+        }
+        # HLS播放--http://example.com[:port]/dir/streamname.m3u8
+        application hls {
+            live on;
+            hls on;
+            hls_path /tmp/hls;
+        }
+        # DASH播放——http://example.com[:port]/dir/streamname.mpd
+        application dash {
+            live on;
+            dash on;
+            dash_path /tmp/dash;
+        }
+    }
+}
 
 
 
 **剩余未解决问题**
-我的视频文件位置是/usr/local/tengine/video/，输入的播放地址是https://ipipip:8000/video/bbb_360p_30fps.mp4
-如果不增加'alias /usr/local/tengine/video/;'就无法正确播放视频，因为他会默认从/usr/local/tengine/html/video/里面找
-令我困惑的是，这个location不是最长匹配原则吗？为什么会先匹配到第一个location里面。 或者它不是最长匹配原则？这个我得再研究研究
+1. 浏览器无法将http2切换成quic。
+2. 将这些组件放到Mininet中。
