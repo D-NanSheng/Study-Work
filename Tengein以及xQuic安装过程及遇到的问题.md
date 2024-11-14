@@ -58,7 +58,7 @@ cd tengine
   --add-module=modules/ngx_http_xquic_module \
   --with-openssl="../Tongsuo-8.3.2" \
   --with-http_mp4_module \ (ps 点播mp4需要)
-  --add-module=modules/nginx-rtmp-module \ (ps rtmp推流，http-flv拉流需要，下载地址 https://github.com/winshining/nginx-http-flv-module/tree/master)
+  --add-module=modules/nginx-http-flv-module \ (ps rtmp推流，http-flv拉流需要，下载地址 https://github.com/winshining/nginx-http-flv-module/tree/master)
 
 make
 make install
