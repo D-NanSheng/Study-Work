@@ -182,6 +182,7 @@ http {
             autoindex on;
             autoindex_exact_size   on;
         }
+  # 播放地址 https://guopeisheng.com:8000/video/xxx.mp4
         location /video/ {
             alias /usr/local/tengine/video/;  # 指定了绝对路径
             mp4;
