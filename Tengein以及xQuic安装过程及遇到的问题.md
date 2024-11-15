@@ -133,9 +133,15 @@ http {
 
 支持quic的curl：https://github.com/TheDarkArchmageShangYang/networkLearning/blob/main/工具的安装及使用/支持quic的curl的安装和使用.md
 
-注意，**http3访问时必须带域名**，不能仅通过ip+端口访问。
+curl的命令采用 `curl -v -k --http3-only https://abc.com:8000 --resolve "abc.com:8000:10.37.30.62"`
 
-由于我们时测试证书，DNS无法解析域名，所以，最好在本地域名转换文件中添加把域名转为ip的条目。
+
+**验证Quic通信的第三种方式**
+
+**火狐**浏览器访问。 注意，**访问时必须带域名**，不能仅通过ip+端口访问。浏览器选择火狐浏览器，谷歌不行。
+
+由于我们采用的证书为自签名证书，用于测试，DNS无法解析域名，所以，必须在本地域名转换文件(debian通常是/etc/hosts)中添加把域名转为ip的条目。
+
 
 **mp4点播的配置**
 ```
