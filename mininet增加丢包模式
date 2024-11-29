@@ -4,6 +4,10 @@ netem的手册中提供了模拟丢包的多种方法，而mininet只实现了�
 
 netem的手册链接 https://man7.org/linux/man-pages/man8/tc-netem.8.html 
 
+linux tc netem源码 https://github.com/torvalds/linux/blob/master/net/sched/sch_netem.c
+
+注意：从源码中可以得知，状态转换并非是周期出发，而是转发数据包时才触发。
+
 使用方法：(不可与loss同时使用)
 addlink的时候增加参数 loss_state='state 0.08 10 0 100 0.2' 具体数字自拟
 
