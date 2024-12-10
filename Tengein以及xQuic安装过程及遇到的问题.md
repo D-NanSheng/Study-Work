@@ -104,6 +104,17 @@ http {
         ssl_protocols       TLSv1.3;
         ssl_certificate        /home/guopeisheng/workbench/QuicBBR/cert/cacert.crt;
         ssl_certificate_key    /home/guopeisheng/workbench/QuicBBR/cert/privkey.key;
+        
+        # 该选项用于开启address validation，但是会和下方的0-RTT冲突
+        #quic_retry on;
+ 
+        # 开启 TLS 1.3 0-RTT
+        # ssl_early_data on;
+        # 添加 Early-Data 头告知后端, 防止重放攻击
+        # proxy_set_header Early-Data $ssl_early_data;
+ 
+        # 参考nginx官方目前支持的http3版本，我们添加对应的header
+        # add_header Alt-Svc 'h3=":443"; ma=2592000,h3-29=":443"; ma=2592000,h3-T051=":443"; ma=2592000,h3-Q050=":443"; ma=2592000,h3-Q046=":443"; ma=2592000,h3-Q043=":443"; ma=2592000,quic=":443"; ma=2592000; v="46,43"';
 
         location / {
             root   html;
