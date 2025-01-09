@@ -230,5 +230,5 @@ class TCIntf( Intf ):
 
 ´´´
 
-下一步：增加丢包模式 ´ gemodel PERCENT [ R [ 1-H [ 1-K ]]] ´
+未来：增加丢包模式 ´ gemodel PERCENT [ R [ 1-H [ 1-K ]]] ´
 
